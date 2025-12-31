@@ -1,0 +1,9 @@
+[package]
+org = "thambaru"
+name = "newrelic"
+version = "0.1.0"
+distribution = "2201.13.1"
+authors = ["thambaru"]
+keywords = ["observability", "logging", "newrelic", "tracing", "monitoring", "structured-logging", "json-logging"]
+repository = "https://github.com/thambaru/newrelic"
+license = ["Apache-2.0"]
