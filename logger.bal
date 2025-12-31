@@ -5,15 +5,18 @@ public isolated class Logger {
     private final LoggerConfig & readonly config;
     private final TraceContext & readonly defaultContext;
     private final http:Client? httpClient;
+    private final LogBatchManager? batchManager;
     
     # Initialize a new logger instance
     #
     # + config - Logger configuration
     # + httpClient - HTTP client for New Relic (optional)
-    public isolated function init(LoggerConfig config, http:Client? httpClient = ()) {
+    # + batchManager - Batch manager for New Relic logs (optional)
+    public isolated function init(LoggerConfig config, http:Client? httpClient = (), LogBatchManager? batchManager = ()) {
         self.config = config.cloneReadOnly();
         self.defaultContext = generateTraceContext().cloneReadOnly();
         self.httpClient = httpClient;
+        self.batchManager = batchManager;
     }
     
     # Log an INFO level message
@@ -124,7 +127,7 @@ public isolated class Logger {
         }
         
         // Export log safely
-        safeExportLog(self.config, jsonLog, self.httpClient);
+        safeExportLog(self.config, jsonLog, self.httpClient, self.batchManager);
     }
     
     # Get logger configuration
@@ -132,6 +135,22 @@ public isolated class Logger {
     # + return - Logger configuration (readonly)
     public isolated function getConfig() returns LoggerConfig {
         return self.config;
+    }
+    
+    # Flush any pending logs (useful for graceful shutdown)
+    public isolated function flushLogs() {
+        LogBatchManager? manager = self.batchManager;
+        if manager is LogBatchManager {
+            manager.flushPendingLogs();
+        }
+    }
+    
+    # Shutdown the logger and flush pending logs
+    public isolated function shutdownLogger() {
+        LogBatchManager? manager = self.batchManager;
+        if manager is LogBatchManager {
+            manager.shutdownManager();
+        }
     }
 }
 
@@ -166,6 +185,8 @@ public isolated function initLogger(LoggerConfig config) returns Logger|Configur
     
     // Create HTTP client if New Relic is enabled
     http:Client? httpClient = ();
+    LogBatchManager? batchManager = ();
+    
     if enrichedConfig.enableNewRelic && enrichedConfig.newRelicLicenseKey is string {
         string endpoint = enrichedConfig.newRelicLogEndpoint ?: "https://log-api.newrelic.com/log/v1";
         
@@ -176,10 +197,16 @@ public isolated function initLogger(LoggerConfig config) returns Logger|Configur
         
         do {
             httpClient = check new(endpoint);
+            
+            // Create batch manager for lazy-sending
+            string licenseKey = enrichedConfig.newRelicLicenseKey ?: "";
+            if httpClient is http:Client {
+                batchManager = new LogBatchManager(enrichedConfig, httpClient, licenseKey);
+            }
         } on fail error e {
             return error ConfigurationError(string `Failed to initialize New Relic HTTP client: ${e.message()}`);
         }
     }
     
-    return new Logger(enrichedConfig, httpClient);
+    return new Logger(enrichedConfig, httpClient, batchManager);
 }

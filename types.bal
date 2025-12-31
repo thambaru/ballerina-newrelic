@@ -19,6 +19,9 @@ public enum LogLevel {
 # + newRelicLicenseKey - New Relic license key (optional, can be set via env)
 # + newRelicAppName - New Relic application name (optional, can be set via env)
 # + newRelicLogEndpoint - New Relic log endpoint (optional)
+# + batchSize - Maximum number of logs to batch before sending (default: 100)
+# + flushIntervalMs - Interval in milliseconds to flush batched logs (default: 5000)
+# + enableBatching - Enable log batching for New Relic (default: true)
 public type LoggerConfig record {|
     string serviceName;
     string? environment = ();
@@ -29,6 +32,9 @@ public type LoggerConfig record {|
     string? newRelicLicenseKey = ();
     string? newRelicAppName = ();
     string? newRelicLogEndpoint = ();
+    int batchSize = 100;
+    int flushIntervalMs = 5000;
+    boolean enableBatching = true;
 |};
 
 # Trace context record
@@ -72,4 +78,11 @@ public type LogRecord record {|
     string? 'error\.message;
     string? 'error\.stack;
     map<json>...;
+|};
+
+# Log batch for New Relic export
+#
+# + logs - Array of log entries as JSON strings
+public type LogBatch record {|
+    string[] logs;
 |};

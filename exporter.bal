@@ -21,13 +21,17 @@ public isolated function exportToStderr(string message) {
 # + config - Logger configuration
 # + jsonLog - JSON log string
 # + httpClient - HTTP client for New Relic (optional)
-public isolated function exportLog(LoggerConfig config, string jsonLog, http:Client? httpClient = ()) {
+# + batchManager - Batch manager for New Relic logs (optional)
+public isolated function exportLog(LoggerConfig config, string jsonLog, http:Client? httpClient = (), LogBatchManager? batchManager = ()) {
     // For v1, we only support stdout export
     // New Relic can collect logs from stdout via Infrastructure Agent
     exportToStdout(jsonLog);
     
-    // HTTP export to New Relic Logs API if configured
-    if config.enableNewRelic && httpClient is http:Client && config.newRelicLicenseKey is string {
+    // Use batch manager for New Relic export if available
+    if config.enableNewRelic && batchManager is LogBatchManager {
+        batchManager.addLog(jsonLog);
+    } else if config.enableNewRelic && httpClient is http:Client && config.newRelicLicenseKey is string {
+        // Fallback to immediate sending if batch manager is not available
         _ = start exportToNewRelic(httpClient, jsonLog, config.newRelicLicenseKey ?: "");
     }
 }
@@ -37,9 +41,10 @@ public isolated function exportLog(LoggerConfig config, string jsonLog, http:Cli
 # + config - Logger configuration
 # + jsonLog - JSON log string
 # + httpClient - HTTP client for New Relic (optional)
-public isolated function safeExportLog(LoggerConfig config, string jsonLog, http:Client? httpClient = ()) {
+# + batchManager - Batch manager for New Relic logs (optional)
+public isolated function safeExportLog(LoggerConfig config, string jsonLog, http:Client? httpClient = (), LogBatchManager? batchManager = ()) {
     do {
-        exportLog(config, jsonLog, httpClient);
+        exportLog(config, jsonLog, httpClient, batchManager);
     } on fail error e {
         // Never crash the application due to logging failures
         // Optionally log to stderr for debugging
@@ -47,12 +52,6 @@ public isolated function safeExportLog(LoggerConfig config, string jsonLog, http
     }
 }
 
-# Export log to New Relic Logs API
-#
-# + httpClient - HTTP client
-# + jsonLog - JSON log string
-# + licenseKey - New Relic license key
-# + return - Error if export failed
 # Export log to New Relic Logs API
 #
 # + httpClient - HTTP client

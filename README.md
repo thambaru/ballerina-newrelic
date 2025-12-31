@@ -14,6 +14,7 @@ A production-ready Ballerina library that provides structured JSON logging with 
 - 🛡️ **Production Ready** - Safe error handling, never crashes your application
 - 🔒 **Security First** - Automatic masking of sensitive fields (passwords, tokens, secrets)
 - 🚀 **Performance Optimized** - Minimal overhead, safe under high concurrency
+- 📦 **Lazy-Sending** - Intelligent batching reduces New Relic API calls and improves performance
 
 ## Installation
 
@@ -127,7 +128,34 @@ public type LoggerConfig record {|
     string? newRelicLicenseKey = (); // New Relic license key
     string? newRelicAppName = ();    // New Relic app name
     string? newRelicLogEndpoint = ();// New Relic log endpoint
+    int batchSize = 100;             // Batch size for New Relic logs (default: 100)
+    int flushIntervalMs = 5000;      // Flush interval in milliseconds (default: 5000)
+    boolean enableBatching = true;   // Enable log batching (default: true)
 |};
+```
+
+### Lazy-Sending Configuration
+
+The library implements intelligent batching to reduce API calls to New Relic:
+
+- **Batch Size**: Logs are collected and sent in batches (default: 100 logs)
+- **Flush Interval**: Batches are automatically flushed every 5 seconds (default)
+- **Immediate Mode**: Disable batching for immediate sending (set `enableBatching: false`)
+
+```ballerina
+// High-throughput service with large batches
+newrelic:Logger logger = check newrelic:initLogger({
+    serviceName: "high-volume-service",
+    batchSize: 500,           // Send 500 logs at once
+    flushIntervalMs: 10000,   // Flush every 10 seconds
+    enableBatching: true
+});
+
+// Low-latency service with immediate sending
+newrelic:Logger logger = check newrelic:initLogger({
+    serviceName: "real-time-service",
+    enableBatching: false     // Send each log immediately
+});
 ```
 
 ### Environment Variables
@@ -205,6 +233,38 @@ logger.info("User login", {
 
 ## New Relic Integration
 
+### Lazy-Sending for Performance
+
+The library implements intelligent batching to optimize performance and reduce API calls:
+
+**How it works:**
+1. **Batching**: Logs are collected in memory until batch size is reached (default: 100 logs)
+2. **Timer-based flushing**: Batches are automatically sent every 5 seconds (configurable)
+3. **Immediate mode**: Disable batching for real-time requirements
+4. **Graceful shutdown**: All pending logs are flushed when the logger is shutdown
+
+**Benefits:**
+- 📈 **Reduced API calls**: 100x fewer HTTP requests to New Relic
+- ⚡ **Better performance**: Lower latency for your application
+- 💰 **Cost optimization**: Fewer API calls may reduce costs
+- 🛡️ **Reliability**: Built-in retry and error handling
+
+```ballerina
+// Example: Configure batching for your use case
+newrelic:Logger logger = check newrelic:initLogger({
+    serviceName: "my-service",
+    batchSize: 50,           // Send 50 logs at once
+    flushIntervalMs: 3000,   // Flush every 3 seconds
+    enableBatching: true     // Enable batching (default)
+});
+
+// For graceful shutdown, always flush pending logs
+public function gracefulShutdown() {
+    logger.flushLogs();      // Flush any pending logs
+    logger.shutdownLogger(); // Stop batch manager
+}
+```
+
 ### Setup with New Relic Infrastructure Agent
 
 1. Install the New Relic Infrastructure Agent on your host
@@ -251,6 +311,12 @@ logger.warn(message, additionalFields?, context?);
 
 # Log an ERROR level message
 logger.logError(message, error?, additionalFields?, context?);
+
+# Flush pending logs (useful for graceful shutdown)
+logger.flushLogs();
+
+# Shutdown logger and flush all pending logs
+logger.shutdownLogger();
 ```
 
 ### Trace Context Functions
@@ -320,7 +386,6 @@ For issues and questions:
 
 - [ ] Custom metric support
 - [ ] Performance metrics
-- [ ] Async export queue
 - [ ] Sampling configuration
 
 ## Changelog
@@ -331,6 +396,7 @@ For issues and questions:
 - Structured JSON logging
 - W3C trace context support
 - New Relic compatibility
-- New Relic log export
+- New Relic log export with async exporting
+- Intelligent batching for performance optimization
 - Automatic field masking
 - Production-ready error handling
