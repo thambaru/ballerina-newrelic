@@ -379,8 +379,8 @@ Contributions are welcome! Please read the contributing guidelines before submit
 ## Support
 
 For issues and questions:
-- GitHub Issues: [Create an issue](https://github.com/thambaru/newrelic/issues)
-- Documentation: [Ballerina Central](https://central.ballerina.io/)
+- GitHub Issues: [Create an issue](https://github.com/thambaru/ballerina-newrelic/issues)
+- Documentation: [Ballerina Central](https://central.ballerina.io/thambaru/newrelic)
 
 ## Roadmap
 
