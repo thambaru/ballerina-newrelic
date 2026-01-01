@@ -1,5 +1,3 @@
-// Copyright (c) 2025, thambaru. All rights reserved.
-
 import ballerina/time;
 
 # Fields to mask in logs for security

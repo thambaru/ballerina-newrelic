@@ -1,5 +1,3 @@
-// Copyright (c) 2025, thambaru. All rights reserved.
-
 # Log level enumeration
 public enum LogLevel {
     DEBUG,

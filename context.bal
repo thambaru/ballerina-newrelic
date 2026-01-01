@@ -1,5 +1,3 @@
-// Copyright (c) 2025, thambaru. All rights reserved.
-
 import ballerina/random;
 import ballerina/http;
 import ballerina/lang.'string as strings;

@@ -1,5 +1,3 @@
-// Copyright (c) 2025, thambaru. All rights reserved.
-
 # New Relic library error type
 public type NewRelicError distinct error;
 
