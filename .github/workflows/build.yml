@@ -1,0 +1,27 @@
+name: Build Check
+run-name: "Build Check: ${{ github.event_name == 'workflow_dispatch' && format('PR #{0}', github.event.inputs.pr_number) || github.event_name == 'push' && github.event.head_commit.message || github.head_ref }}"
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ballerina
+        uses: ballerina-platform/setup-ballerina@v1
+        with:
+          version: 2201.13.1
+
+      - name: Build
+        run: bal pack
+
+      - name: Test
+        run: bal test
